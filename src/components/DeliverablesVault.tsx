@@ -300,30 +300,29 @@ export const DeliverablesVault: React.FC = () => {
                     Leyline Relay
                   </h3>
                   <p className="text-base font-semibold text-amber-300">
-                    When towers fall and spectrum goes dark, every pocket becomes a relay tower.
+                    When cell towers fail, nearby phones become the network.
                   </p>
                   <p className="text-sm text-slate-300">
-                    Leyline Relay is a delay-tolerant, peer-to-peer Bluetooth Low Energy (BLE) mesh network for Android that routes cryptographically signed 180-byte SOS packets hop-by-hop in strict Airplane Mode without internet, Wi-Fi, or cellular infrastructure. By combining negotiated 185-byte GATT <code className="text-slate-100">WRITE_TYPE_NO_RESPONSE</code> bursts with a Write-Ahead-Logged (WAL) Room SQLite Store-and-Forward outbox, emergency frames survive radio blackouts and physical node mobility until reaching rescue responders.
+                    Leyline Relay is an offline Android app that sends emergency SOS alerts from phone to phone using Bluetooth Low Energy (BLE) in Airplane Mode—with zero internet, Wi-Fi, or mobile signal. If no rescue team is nearby, each phone safely saves the message in its local SQLite database and automatically passes it forward as soon as another phone walks into Bluetooth range.
                   </p>
                 </div>
 
                 {/* Rendered Section 1: Binary Packet Spec Table */}
                 <div className="space-y-3">
                   <h4 className="text-base font-bold text-slate-100">
-                    1. Binary Packet Specification (180-Byte Wire Frame)
+                    1. Binary Packet Specification (180-Byte Bluetooth Packet)
                   </h4>
                   <p className="text-xs text-slate-400">
-                    Negotiated <code className="text-slate-200">requestMtu(185)</code> yields <code className="text-slate-200">182B</code> usable ATT payload (<code className="text-slate-200">185B - 3B</code> ATT header). Serialized in <code className="text-slate-200">ByteOrder.BIG_ENDIAN</code>:
+                    Default Android Bluetooth only sends <code className="text-slate-200">20 bytes</code> at once. Upon connecting, Leyline requests a <code className="text-slate-200">185-byte</code> transfer slot (<code className="text-slate-200">requestMtu(185)</code>, leaving <code className="text-slate-200">182B</code> usable) so an entire signed <strong>180-byte</strong> SOS alert travels in one burst:
                   </p>
                   <div className="overflow-x-auto border border-slate-800 rounded-lg">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-300">
-                          <th className="py-2.5 px-3 font-semibold">Byte Offset</th>
+                          <th className="py-2.5 px-3 font-semibold">Byte Range</th>
                           <th className="py-2.5 px-3 font-semibold">Field</th>
-                          <th className="py-2.5 px-3 font-semibold text-right">Bytes</th>
-                          <th className="py-2.5 px-3 font-semibold">Wire Type</th>
-                          <th className="py-2.5 px-3 font-semibold">Purpose &amp; Invariant</th>
+                          <th className="py-2.5 px-3 font-semibold text-right">Size</th>
+                          <th className="py-2.5 px-3 font-semibold">What It Stores (Plain English)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/80">
@@ -332,14 +331,11 @@ export const DeliverablesVault: React.FC = () => {
                             <td className="py-2 px-3 font-mono text-amber-300 whitespace-nowrap tabular-nums">
                               {f.offsetHex}
                             </td>
-                            <td className="py-2 px-3 font-mono text-slate-100 whitespace-nowrap">
+                            <td className="py-2 px-3 font-semibold text-slate-100 whitespace-nowrap">
                               {f.name}
                             </td>
-                            <td className="py-2 px-3 font-mono text-right text-slate-200 tabular-nums">
-                              {f.sizeBytes}
-                            </td>
-                            <td className="py-2 px-3 font-mono text-slate-400 whitespace-nowrap">
-                              {f.wireType}
+                            <td className="py-2 px-3 font-mono text-right text-slate-200 tabular-nums whitespace-nowrap">
+                              {f.sizeBytes} B
                             </td>
                             <td className="py-2 px-3 text-slate-300">
                               {f.summary}
@@ -349,31 +345,34 @@ export const DeliverablesVault: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
+                  <p className="text-xs text-slate-400">
+                    <strong className="text-slate-200">Why Middle Phones Don&apos;t Break the Signature:</strong> The signature locks every field except <code className="text-sky-300">TTL</code> and <code className="text-sky-300">Hop Count</code>, so relay phones can count down hops while the final phone still verifies the original sender.
+                  </p>
                 </div>
 
                 {/* Rendered Section 2: Store-and-Forward ASCII Flow */}
                 <div className="space-y-3">
                   <h4 className="text-base font-bold text-slate-100">
-                    2. Store-and-Forward TTL Routing Proof (Node A → Node B → Node C)
+                    2. How Store-and-Forward &amp; TTL Routing Work (Phone A → Phone B → Phone C)
                   </h4>
                   <pre className="p-4 rounded-lg bg-slate-900/90 border border-slate-800 font-mono text-[11px] leading-relaxed text-slate-200 overflow-x-auto">
-{`[NODE A: Origin]               [NODE B: Data Mule]               [NODE C: Responder]
-TTL=5, Hop=0, SOS=0x11         SQLite WAL Outbox                 Airplane Mode = 1
-      |                                |                                 |
-      |=== 180B GATT Write (MTU 185) =>| Verify Ed25519 (Origin A): OK   |
-      |<-- 17B Receipt ACK ------------| SeenCache: MISS                 |
-      X (Link severed in stairwell)    | decrementTTL: TTL 5->4, Hop 0->1|
-                                       | WAL COMMIT (survives blackout)  |
-                                       |~~~ 175s Zero-Peer Blackout ~~~~~|
-                                       |=== 180B GATT Write (TTL=4) ====>| Verify Origin A Sig: OK
-                                       |<-- 17B Receipt ACK -------------| Render SOS + Store TTL=3`}
+{`[PHONE A: Trapped Person]        [PHONE B: Walking Messenger]        [PHONE C: Rescue Team]
+Airplane Mode: ON                Airplane Mode: ON                   Airplane Mode: ON
+        |                                |                                   |
+        | 1. Creates SOS (TTL=5, Hop=0)  |                                   |
+        |====== Sends 180B via BLE =====>| 2. Signature -> VALID             |
+        X  (Bluetooth disconnects)       | 3. Updates TTL: 5->4, Hop: 0->1   |
+                                         | 4. Saves to SQLite Outbox         |
+                                         |~~~ Walks 2 mins (0 phones near) ~~|
+                                         |====== Sends 180B via BLE ========>| 5. Signature -> VALID
+                                         |                                   | 6. Shows SOS & GPS Pin!`}
                   </pre>
                 </div>
 
                 {/* Rendered Section 3: 3 Edge Cases */}
                 <div className="space-y-3">
                   <h4 className="text-base font-bold text-slate-100">
-                    3. Three Mandated Edge-Case Failure Modes &amp; Recoveries
+                    3. Three Edge-Case Failures &amp; How We Recover
                   </h4>
                   <div className="divide-y divide-slate-800 border border-slate-800 rounded-lg">
                     {FAILURE_MODES.map((m) => (
@@ -383,7 +382,7 @@ TTL=5, Hop=0, SOS=0x11         SQLite WAL Outbox                 Airplane Mode =
                         </div>
                         <p className="text-xs text-slate-400">{m.trigger}</p>
                         <p className="text-xs text-emerald-300/95">
-                          Recovery: {m.recoverySteps.join(' ')}
+                          <strong>How We Fix It:</strong> {m.recoverySteps.join(' ')}
                         </p>
                       </div>
                     ))}
@@ -393,7 +392,7 @@ TTL=5, Hop=0, SOS=0x11         SQLite WAL Outbox                 Airplane Mode =
                 {/* Rendered Section 4: Logcat */}
                 <div className="space-y-3">
                   <h4 className="text-base font-bold text-slate-100">
-                    4. Multi-Device Physical Test Log (Airplane Mode = 1)
+                    4. Physical 3-Phone Test Log (Airplane Mode ON)
                   </h4>
                   <pre className="p-4 rounded-lg bg-slate-900/90 border border-slate-800 font-mono text-[11px] leading-relaxed text-slate-300 overflow-x-auto">
                     {TEST_LOG_RAW}
@@ -403,18 +402,18 @@ TTL=5, Hop=0, SOS=0x11         SQLite WAL Outbox                 Airplane Mode =
                 {/* Rendered Section 5: Zero-Cloud Tool Disclosure */}
                 <div className="space-y-3">
                   <h4 className="text-base font-bold text-slate-100">
-                    5. Tool &amp; Dependency Disclosure (Zero External Cloud SDKs)
+                    5. Tool &amp; Library Disclosure (100% Offline, Zero Cloud)
                   </h4>
                   <p className="text-xs text-slate-400">
-                    <code className="text-emerald-300">android.permission.INTERNET</code> is explicitly omitted from <code className="text-slate-200">AndroidManifest.xml</code>.
+                    Zero cloud services, zero third-party mesh SDKs, and <code className="text-emerald-300">android.permission.INTERNET</code> is completely removed from <code className="text-slate-200">AndroidManifest.xml</code>.
                   </p>
                   <div className="overflow-x-auto border border-slate-800 rounded-lg">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-300">
-                          <th className="py-2.5 px-3 font-semibold">Subsystem</th>
-                          <th className="py-2.5 px-3 font-semibold">Native API / Library</th>
-                          <th className="py-2.5 px-3 font-semibold">Offline Role</th>
+                          <th className="py-2.5 px-3 font-semibold">Part of the App</th>
+                          <th className="py-2.5 px-3 font-semibold">Android / Open-Source Tool</th>
+                          <th className="py-2.5 px-3 font-semibold">What We Use It For</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/80">

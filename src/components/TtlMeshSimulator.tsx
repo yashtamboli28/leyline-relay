@@ -494,9 +494,9 @@ export const TtlMeshSimulator: React.FC = () => {
         <div className="p-5 overflow-x-auto">
           <pre className="font-mono text-xs leading-relaxed text-slate-300 space-y-1">
             {filteredLogLines.map((line, i) => {
-              const isDeliver = line.includes('SOS DELIVERED');
+              const isDeliver = line.includes('SOS DELIVERED') || line.includes('SOS DISPLAYED');
               const isWarn = line.includes(' W/');
-              const isLoop = line.includes('DropDuplicate');
+              const isLoop = line.includes('DropDuplicate') || line.includes('Ignored duplicate');
               return (
                 <div
                   key={i}

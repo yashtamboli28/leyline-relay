@@ -140,10 +140,10 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
             <div className="lg:col-span-8 space-y-4">
               <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-50 text-balance leading-tight">
-                When towers fall and spectrum goes dark, every pocket becomes a relay tower.
+                When cell towers fail, nearby phones become the network.
               </h1>
               <p className="text-base text-slate-300 leading-relaxed max-w-3xl">
-                Leyline Relay routes cryptographically signed 180-byte emergency SOS frames hop-by-hop across Android handsets in strict Airplane Mode without cellular, Wi-Fi, or internet access. Combining negotiated 185-byte GATT MTU bursts with a Write-Ahead-Logged Room SQLite Store-and-Forward outbox, packets survive physical radio blackouts until reaching rescue responders.
+                Leyline Relay sends emergency SOS alerts from phone to phone over Bluetooth Low Energy (BLE) in Airplane Mode—with zero internet, Wi-Fi, or mobile signal. If no rescue team is nearby, each phone saves the message in its local SQLite database and automatically passes it forward when another phone walks into range.
               </p>
             </div>
 
