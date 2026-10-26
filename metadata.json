@@ -1,0 +1,6 @@
+{
+  "name": "Leyline Relay — Offline BLE Mesh Architecture",
+  "description": "Droidrush 2026 submission kit and interactive protocol workbench for Leyline Relay: a delay-tolerant Android BLE mesh network with 180-byte signed packets and Store-and-Forward SQLite TTL routing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
